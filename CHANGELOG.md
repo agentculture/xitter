@@ -11,6 +11,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - `CLAUDE.md` rewritten from the `/init` seed into a full runtime prompt for this agent: the CLI dispatch/error/output contract, how a noun group registers, the `_PROMPT_FILE` vs `_RESIDENT_PROMPT` split in `doctor`, the four-harness layout, the vendored-skill rule, and the repo's CI conventions. It states plainly that the Twitter/X domain surface is not implemented yet, and flags the in-package strings still describing the repo as a clonable template.
 - `README.md` reframed from template-clone instructions to this agent: a **Status** section stating what is and is not built, the planned X verbs marked planned, and a **Development** section replacing "Make it your own".
+- The three sibling harness prompt files reframed for this agent, each written for the harness that actually reads it: `QWEN.md` (Qwen Code), `AGENTS.override.md` (Pi's non-coding `associate` lane — what to watch for when summarizing this repo), and `AGENTS.colleague.md` (the colleague CLI, usually reached through the `ask-colleague` skill — so it now describes the review/explore/write verbs, the throwaway-worktree isolation, and the conventions a review here should be measured against). All four prompt files now agree that the Twitter/X surface is unimplemented.
 
 ## [0.9.0] - 2026-09-06
 
