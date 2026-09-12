@@ -117,9 +117,15 @@ python3 scripts/scan-secrets.py                        # committed-secret gate
 uv run python scripts/harness-smoke.py --stage all --require config
 ```
 
-Every PR bumps the version in `pyproject.toml` (and adds a `CHANGELOG.md`
-entry) — even docs-only PRs; the `version-check` CI job blocks merge
-otherwise. Pushing to `main` publishes to PyPI via Trusted Publishing.
+Every PR bumps the version in `pyproject.toml` and adds a `CHANGELOG.md`
+entry — even docs-only PRs. The `version-check` CI job blocks merge on the
+version bump only (it compares `project.version` against `main`); the
+changelog entry is convention, not an enforced gate. Pushing to `main`
+publishes to PyPI via Trusted Publishing.
+
+`markdownlint-cli2` is a Node tool and is not installed by `uv sync` —
+`npm install -g markdownlint-cli2@0.21.0` (the version CI pins) if you want
+to run the markdown lint locally.
 
 See [`CLAUDE.md`](CLAUDE.md) for the full conventions and architecture.
 

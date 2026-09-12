@@ -41,6 +41,7 @@ uv run isort --check-only xitter tests
 uv run flake8 xitter tests                # line length 100
 uv run bandit -c pyproject.toml -r xitter
 markdownlint-cli2 "**/*.md" "#node_modules" "#.local" "#.claude/skills"
+# ^ Node, not uv: npm install -g markdownlint-cli2@0.21.0 (the version CI pins)
 python3 scripts/scan-secrets.py           # committed-credential / endpoint gate
 uv run teken cli doctor . --strict        # agent-first rubric gate
 uv run python scripts/harness-smoke.py --stage all --require config
@@ -162,8 +163,10 @@ asserts they're caught). Breaking repo layout breaks tests here, by design.
 ## Conventions
 
 - **Every PR bumps the version** — even docs/config/CI-only PRs. Use the
-  `version-bump` skill (updates `pyproject.toml` + `CHANGELOG.md`); the
-  `version-check` CI job comments on and blocks the PR otherwise.
+  `version-bump` skill, which updates `pyproject.toml` and `CHANGELOG.md`
+  together. Note what CI actually enforces: `version-check` compares only
+  `project.version` against `main`, so a bump with no changelog entry still
+  passes the gate. The `CHANGELOG.md` half is convention, held up by review.
 - **PR lane**: the `cicd` skill (create/read/reply/status/await, SonarCloud
   quality gate + unresolved-thread tally). It signs replies automatically as
   `- xitter (Claude)` via `culture.yaml`; don't sign those bodies by hand. Sign
