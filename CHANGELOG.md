@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/). This project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - 2026-09-12
+
+### Changed
+
+- `CLAUDE.md` rewritten from the `/init` seed into a full runtime prompt for this agent: the CLI dispatch/error/output contract, how a noun group registers, the `_PROMPT_FILE` vs `_RESIDENT_PROMPT` split in `doctor`, the four-harness layout, the vendored-skill rule, and the repo's CI conventions. It states plainly that the Twitter/X domain surface is not implemented yet, and flags the in-package strings still describing the repo as a clonable template.
+- `README.md` reframed from template-clone instructions to this agent: a **Status** section stating what is and is not built, the planned X verbs marked planned, and a **Development** section replacing "Make it your own".
+
 ## [0.9.0] - 2026-09-06
 
 ### Added
