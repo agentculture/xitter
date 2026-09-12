@@ -1,6 +1,6 @@
 [project]
 name = "xitter"
-version = "0.9.0"
+version = "0.9.1"
 description = "Twitter/X CLI for agents: read timelines and mentions, post and reply, follow and unfollow, and manage lists and bookmarks from the command line."
 readme = "README.md"
 license = "Apache-2.0"

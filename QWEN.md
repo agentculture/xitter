@@ -9,11 +9,18 @@ Qwen Code session.
 
 ## What this project is
 
-`xitter` is a **clonable template for AgentCulture mesh agents**.
-It is a working, minimal example of the sibling pattern every Culture agent
-follows: an agent-first CLI, a mesh identity, the canonical skill kit, and a
-buildable/deployable package baseline. Clone it, rename the package, edit
-`culture.yaml`, and you have a new agent that `steward doctor` recognizes.
+`xitter` is an AgentCulture mesh agent whose intended domain is a **Twitter/X
+CLI for agents** — read timelines and mentions, post and reply, follow and
+unfollow, manage lists and bookmarks, all from the command line.
+
+**None of that domain surface exists yet.** On disk today is the scaffold this
+repo was cloned from (`culture-agent-template`): the agent-first CLI skeleton,
+a mesh identity, the vendored skill kit, and the CI/deploy baseline. There is
+no X API client, no auth handling, and no tweet/timeline code in `xitter/`.
+Some in-package strings (the parser description, `learn`'s body, `explain`'s
+root entry, `overview`'s artifact list) still describe the repo as "a clonable
+template for AgentCulture mesh agents" — leftover template prose, to be
+rewritten as the domain verbs land.
 
 It is a sibling to [`guildmaster`](https://github.com/agentculture/guildmaster)
 (the **skills supplier**), [`steward`](https://github.com/agentculture/steward)
@@ -34,6 +41,9 @@ exactly one of them — there is no shared base file for them to inherit from:
 - **colleague** → [`AGENTS.colleague.md`](AGENTS.colleague.md).
 - **Qwen Code** → this file.
 
+Change a repo convention and all four files need the update in the same PR;
+nothing makes them cascade, so they drift silently.
+
 ## Identity
 
 Declared in `culture.yaml`:
@@ -52,33 +62,19 @@ requires nor changes that declaration. The declaration and the resident prompt
 together satisfy the two invariants `steward doctor` verifies:
 **prompt-file-present** and **backend-consistency** (`claude` ↔ `CLAUDE.md`).
 
-## Cloning this template (re-initialization)
-
-When you start a new agent from this template:
-
-1. Rename the package directory `xitter/` → `<your_module>/`
-   and replace `xitter` (module) / `xitter`
-   (CLI and dist name) throughout `pyproject.toml`, the package, `tests/`,
-   `sonar-project.properties`, and `README.md`. The name is hard-coded in
-   ~100 places, so list every occurrence first rather than renaming by hand
-   (`git grep` is portable and skips `.git` / untracked `__pycache__`):
-
-   ```bash
-   git grep -nF -e 'xitter' -e 'xitter'
-   ```
-
-2. Set your `suffix` (and `backend`) in `culture.yaml`. `whoami` and `doctor`
-   then reflect the new identity with no further code change.
-3. Rewrite `CLAUDE.md` (and this file, and the other two harness files) to
-   describe your agent.
-4. Re-vendor the skill kit you need from guildmaster (see
-   `docs/skill-sources.md`) — keep only the skills your agent uses.
+Your project skills are discovered through `.qwen/skills`, a **relative**
+symlink onto the one canonical `.claude/skills` tree. Do not replace it with a
+real directory or an absolute link — `scripts/harness-smoke.py` fails the build
+if you do, because a forked skill tree is how four harnesses silently stop
+sharing one kit.
 
 ## The CLI
 
 The CLI is cited (cite-don't-import) from teken's `python-cli` reference
 (`teken cli cite`), so the runtime package has **no third-party dependencies**;
-`teken` (a.k.a. `afi-cli`) is a dev dependency only. Agent-first verbs:
+`teken` (a.k.a. `afi-cli`) is a dev dependency only. Adding an HTTP client for
+the X API would break that property — treat it as a deliberate decision, not an
+incidental one. Agent-first verbs:
 
 - `xitter whoami` — identity from `culture.yaml`.
 - `xitter learn` — structured self-teaching prompt.
@@ -89,8 +85,13 @@ The CLI is cited (cite-don't-import) from teken's `python-cli` reference
 
 Conventions: every command supports `--json`; results go to stdout, errors and
 diagnostics to stderr (never mixed); exit codes are `0` success, `1` user
-error, `2` environment error, `3+` reserved. The agent-first rubric is
-enforced in CI by `teken cli doctor . --strict`.
+error, `2` environment error, `3+` reserved. Failures raise `CliError` and are
+formatted centrally — no Python traceback ever reaches stderr. The agent-first
+rubric is enforced in CI by `teken cli doctor . --strict`.
+
+The planned Twitter/X verbs land as noun groups under that same contract; each
+registers in `xitter/cli/_commands/`, is wired into `_build_parser()`, and
+needs a matching entry in `xitter/explain/catalog.py`.
 
 ## Skills
 
@@ -103,18 +104,24 @@ from guildmaster instead.
 
 - **Every PR bumps the version** — even docs/config/CI. Use the
   `version-bump` skill; the `version-check` CI job blocks merge otherwise.
-- **Tests**: `uv run pytest -n auto`. **Lint**: black, isort, flake8 (line
-  length 100), bandit, markdownlint.
+- **Tests**: `uv run pytest -n auto`. Most of the suite guards *repo
+  structure* (harness configs, registry agreement, the secret scanner) rather
+  than the package — breaking the layout breaks tests, by design.
+- **Lint**: black, isort, flake8 (line length 100), bandit, markdownlint, plus
+  `python3 scripts/scan-secrets.py`, which rejects credential-shaped strings
+  and non-localhost endpoints in JSON config. X API credentials belong in the
+  environment, never in a tracked file.
 - **Deploy**: pushing to `main` publishes to PyPI via Trusted Publishing
   (`.github/workflows/publish.yml`); PRs do a TestPyPI dry-run.
 
 ## Layout
 
 ```text
-xitter/   agent-first CLI (cited from teken's python-cli reference)
+xitter/                   agent-first CLI (cited from teken's python-cli reference)
   cli/                    parser, error/output contract, _commands/ (verbs)
   explain/                markdown catalog for `explain`
-tests/                    pytest smoke + introspection tests
+tests/                    pytest CLI tests + repo-structure guard tests
+scripts/                  scan-secrets.py, harness-smoke.py (both CI gates)
 .claude/skills/           vendored guildmaster skill kit (cite-don't-import)
 docs/skill-sources.md     skill provenance ledger
 culture.yaml              mesh identity (suffix + backend)
@@ -124,6 +131,7 @@ culture.yaml              mesh identity (suffix + backend)
 This file describes the repository **as it exists on disk today**. When you
 edit, keep claims grounded in checked-in reality; if a section drifts ahead of
 reality, mark it `(planned)` or move it under a `## Roadmap` heading. For the
-full set of workflow conventions (worktree layout, memory discipline,
-`ask-colleague` usage), see [`CLAUDE.md`](CLAUDE.md) — those conventions apply
-to work in this repo regardless of which harness is doing it.
+full set of workflow conventions (the CLI dispatch contract, `doctor`'s two
+registries, memory discipline, `ask-colleague` usage), see
+[`CLAUDE.md`](CLAUDE.md) — those conventions apply to work in this repo
+regardless of which harness is doing it.

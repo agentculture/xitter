@@ -1,24 +1,58 @@
 # xitter
 
-Twitter/X CLI for agents: read timelines and mentions, post and reply, follow and unfollow, and manage lists and bookmarks from the command line.
+Twitter/X CLI for agents: read timelines and mentions, post and reply, follow
+and unfollow, and manage lists and bookmarks from the command line.
 
-## What you get
+## Status
+
+**Scaffold.** The domain surface described above is not implemented yet —
+there is no X API client, no auth handling, and no timeline/post code in the
+package today. What ships right now is the agent-first CLI skeleton and the
+mesh-agent baseline this repo was scaffolded with:
 
 - **An agent-first CLI** cited from [teken](https://github.com/agentculture/teken)
   (`afi-cli`) — the runtime package has no third-party dependencies.
-- **A mesh identity** — `culture.yaml` (`suffix` + `backend`) and the matching
-  resident prompt file (`CLAUDE.md`, since this template runs
-  `backend: claude`). The mesh resident is one of **two separate
-  selections** over this clone — see
-  [Two selections, not one](#two-selections-not-one) below.
+- **A mesh identity** — `culture.yaml` (`suffix` + `backend`) plus the matching
+  resident prompt file (`CLAUDE.md`, since `culture.yaml` declares
+  `backend: claude`).
 - **Four harness prompt files**, one per agent harness, each read by exactly
-  one of them (see [Prompt files by harness](#prompt-files-by-harness) below).
-  All four harnesses are usable interactively regardless of which one
+  one of them (see [Prompt files by harness](#prompt-files-by-harness)). All
+  four harnesses are usable interactively regardless of which one
   `culture.yaml` names as the mesh resident.
-- **The canonical guildmaster skill kit** (11 skills) under `.claude/skills/`,
-  vendored cite-don't-import. See [`docs/skill-sources.md`](docs/skill-sources.md).
-- **A build + deploy baseline** — pytest, lint, the agent-first rubric gate, and
-  PyPI Trusted Publishing wired into GitHub Actions.
+- **The canonical guildmaster skill kit** under `.claude/skills/`, vendored
+  cite-don't-import. See [`docs/skill-sources.md`](docs/skill-sources.md).
+- **A build + deploy baseline** — pytest, lint, the agent-first rubric gate, a
+  committed-secret scan, a per-harness config smoke check, and PyPI Trusted
+  Publishing wired into GitHub Actions.
+
+## Quickstart
+
+```bash
+uv sync
+uv run pytest -n auto                 # run the test suite
+uv run xitter whoami                  # identity from culture.yaml
+uv run xitter learn                   # self-teaching prompt (add --json)
+uv run teken cli doctor . --strict    # the agent-first rubric gate CI runs
+```
+
+## CLI
+
+| Verb | What it does |
+|------|--------------|
+| `whoami` | Report this agent's nick, version, backend, and model from `culture.yaml`. |
+| `learn` | Print a structured self-teaching prompt. |
+| `explain <path>` | Markdown docs for any noun/verb path. |
+| `overview` | Read-only descriptive snapshot of the agent. |
+| `doctor` | Check the agent-identity invariants (prompt-file-present, backend-consistency). |
+| `cli overview` | Describe the CLI surface itself. |
+
+Every command supports `--json`. Results go to stdout, errors/diagnostics to
+stderr (never mixed). Exit codes: `0` success, `1` user error, `2` environment
+error, `3+` reserved.
+
+The Twitter/X verbs (timeline, mentions, post, reply, follow, lists,
+bookmarks) are **planned** and land as noun groups under the same contract —
+see [`CLAUDE.md`](CLAUDE.md) for how a noun group registers.
 
 ## Prompt files by harness
 
@@ -49,12 +83,14 @@ considered and rejected) and no per-model override file.
 `AGENTS.md`, `QWEN.md` is its sole source of guidance.
 
 There is intentionally **no `AGENTS.md`** at the root — each harness gets an
-unrelated file rather than cascading from a shared base.
+unrelated file rather than cascading from a shared base. Change a repo
+convention and all four files need the update in the same PR; nothing makes
+them cascade.
 
 ## Two selections, not one
 
 It is tempting to read "switch harness" as one decision. It is actually two,
-and this template exists partly to keep them separate:
+and keeping them separate matters:
 
 1. **The interactive harness** — which binary you run (`claude`, `pi`,
    `colleague`, `qwen`). `cd` into the clone and run any of them; all four
@@ -68,52 +104,30 @@ and this template exists partly to keep them separate:
 
 `culture.yaml`'s `backend` affects (2) only. It never affects which harness
 you can invoke interactively in (1). See
-[`docs/harness-selection.md`](docs/harness-selection.md) for the full
-writeup, including who reads this config and why existing siblings are not
-retrofitted by this arc.
+[`docs/harness-selection.md`](docs/harness-selection.md) for the full writeup.
 
-## Quickstart
+## Development
 
 ```bash
-uv sync
-uv run pytest -n auto                 # run the test suite
-uv run xitter whoami  # identity from culture.yaml
-uv run xitter learn   # self-teaching prompt (add --json)
-uv run teken cli doctor . --strict    # the agent-first rubric gate CI runs
+uv run pytest -n auto --cov=xitter --cov-report=term   # coverage floor: 60%
+uv run black xitter tests && uv run isort xitter tests # line length 100
+uv run flake8 xitter tests
+uv run bandit -c pyproject.toml -r xitter
+python3 scripts/scan-secrets.py                        # committed-secret gate
+uv run python scripts/harness-smoke.py --stage all --require config
 ```
 
-## CLI
+Every PR bumps the version in `pyproject.toml` and adds a `CHANGELOG.md`
+entry — even docs-only PRs. The `version-check` CI job blocks merge on the
+version bump only (it compares `project.version` against `main`); the
+changelog entry is convention, not an enforced gate. Pushing to `main`
+publishes to PyPI via Trusted Publishing.
 
-| Verb | What it does |
-|------|--------------|
-| `whoami` | Report this agent's nick, version, backend, and model from `culture.yaml`. |
-| `learn` | Print a structured self-teaching prompt. |
-| `explain <path>` | Markdown docs for any noun/verb path. |
-| `overview` | Read-only descriptive snapshot of the agent. |
-| `doctor` | Check the agent-identity invariants (prompt-file-present, backend-consistency). |
-| `cli overview` | Describe the CLI surface itself. |
+`markdownlint-cli2` is a Node tool and is not installed by `uv sync` —
+`npm install -g markdownlint-cli2@0.21.0` (the version CI pins) if you want
+to run the markdown lint locally.
 
-Every command supports `--json`. Results go to stdout, errors/diagnostics to
-stderr (never mixed). Exit codes: `0` success, `1` user error, `2` environment
-error, `3+` reserved.
-
-## Make it your own
-
-1. Rename the package `xitter/` and the `xitter`
-   CLI/dist name throughout `pyproject.toml`, the package, `tests/`,
-   `sonar-project.properties`, and this `README.md`. The name is hard-coded in
-   ~100 places, so list every occurrence first — see the `git grep` discovery
-   command in [`CLAUDE.md`](CLAUDE.md), the authoritative rename procedure.
-2. Edit `culture.yaml` with your `suffix` and `backend`.
-3. Rewrite `CLAUDE.md` for your agent and run `/init`. Rewrite the other three
-   harness files (`AGENTS.override.md` + `.pi/SYSTEM.md`, `AGENTS.colleague.md`,
-   `QWEN.md`) too if your agent uses those harnesses — don't let them drift out
-   of sync with `CLAUDE.md`.
-4. Re-vendor only the skills you need from guildmaster (see
-   [`docs/skill-sources.md`](docs/skill-sources.md)).
-
-See [`CLAUDE.md`](CLAUDE.md) for the full conventions (version-bump-every-PR,
-the `cicd` PR lane, deploy setup).
+See [`CLAUDE.md`](CLAUDE.md) for the full conventions and architecture.
 
 ## License
 
